@@ -330,6 +330,64 @@ export async function getAllUsers(): Promise<User[]> {
 }
 
 /**
+ * Update user's email address for CC on reports
+ */
+export async function updateUserEmail(
+  discordUserId: string,
+  email: string
+): Promise<void> {
+  const firestore = initializeFirebase();
+
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📧 UPDATING USER EMAIL");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log(`👤 Discord User ID: ${discordUserId}`);
+  console.log(`📧 Email: ${email}`);
+
+  try {
+    await firestore.collection("users").doc(discordUserId).update({
+      email: email,
+    });
+
+    console.log("✅ Email updated successfully");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  } catch (error) {
+    console.error("\n❌ FAILED TO UPDATE EMAIL");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("Error:", error);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    throw error;
+  }
+}
+
+/**
+ * Remove user's email address
+ */
+export async function removeUserEmail(discordUserId: string): Promise<void> {
+  const firestore = initializeFirebase();
+
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🗑️  REMOVING USER EMAIL");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log(`👤 Discord User ID: ${discordUserId}`);
+
+  try {
+    await firestore.collection("users").doc(discordUserId).update({
+      email: admin.firestore.FieldValue.delete(),
+    });
+
+    console.log("✅ Email removed successfully");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  } catch (error) {
+    console.error("\n❌ FAILED TO REMOVE EMAIL");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("Error:", error);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    throw error;
+  }
+}
+
+/**
  * Get hours for a specific user on a specific day
  */
 export async function getHoursByUserAndDay(

@@ -4,6 +4,7 @@ import * as registerCommand from "./commands/register";
 import * as logCommand from "./commands/log";
 import * as editCommand from "./commands/edit";
 import * as deleteCommand from "./commands/delete";
+import * as emailCommand from "./commands/email";
 import * as debugCommand from "./commands/debug";
 import * as myHoursCommand from "./commands/myhours";
 
@@ -15,6 +16,7 @@ const commands = [
   logCommand.data.toJSON(),
   editCommand.data.toJSON(),
   deleteCommand.data.toJSON(),
+  emailCommand.data.toJSON(),
   debugCommand.data.toJSON(),
   myHoursCommand.data.toJSON(),
 ];

@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer";
 import { format } from "date-fns";
-import { getHoursByDateRange, deleteTestLogs } from "./firebaseService";
+import {
+  getHoursByDateRange,
+  deleteTestLogs,
+  getAllUsers,
+} from "./firebaseService";
 import { MonthlyReport, UserHoursSummary, HourLog } from "../types";
 
 /**
@@ -122,10 +126,17 @@ function generateHtmlReport(report: MonthlyReport): string {
       border-left: 4px solid #5865F2;
     }
     .user-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      width: 100%;
       margin-bottom: 15px;
+    }
+    .user-header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .user-header-table td {
+      padding: 0;
+      border: none;
+      background: transparent;
     }
     .username {
       font-size: 20px;
@@ -137,8 +148,6 @@ function generateHtmlReport(report: MonthlyReport): string {
       font-weight: bold;
       color: #2d7d46;
       text-align: right;
-      display: flex;
-      align-items: center;
     }
     table {
       width: 100%;
@@ -151,6 +160,9 @@ function generateHtmlReport(report: MonthlyReport): string {
       padding: 12px;
       text-align: left;
       font-weight: 600;
+    }
+    .hours-column {
+      text-align: right;
     }
     td {
       padding: 10px 12px;
@@ -187,14 +199,18 @@ function generateHtmlReport(report: MonthlyReport): string {
     html += `
     <div class="user-section">
       <div class="user-header">
-        <div class="username">${index + 1}. ${userSummary.username}</div>
-        <div class="user-total">${userSummary.totalHours.toFixed(2)}u</div>
+        <table class="user-header-table">
+          <tr>
+            <td class="username">${index + 1}. ${userSummary.username}</td>
+            <td class="user-total">${userSummary.totalHours.toFixed(2)}u</td>
+          </tr>
+        </table>
       </div>
       <table>
         <thead>
           <tr>
             <th>Datum</th>
-            <th>Uren</th>
+            <th class="hours-column">Uren</th>
             <th>Omschrijving</th>
           </tr>
         </thead>
@@ -205,7 +221,7 @@ function generateHtmlReport(report: MonthlyReport): string {
       html += `
           <tr>
             <td>${format(new Date(log.date), "dd-MM-yyyy")}</td>
-            <td>${log.hours}u</td>
+            <td class="hours-column">${log.hours}u</td>
             <td>${log.description || "-"}</td>
           </tr>
 `;
@@ -300,17 +316,29 @@ export async function sendMonthlyReport(
     const reportText = generatePlainTextReport(report);
     const reportHtml = generateHtmlReport(report);
 
+    // Get all users with registered emails for CC
+    const allUsers = await getAllUsers();
+    const ccEmails = allUsers
+      .filter((user) => user.email)
+      .map((user) => user.email as string);
+
     // Send email
     const transporter = createTransporter();
     const monthYear = format(endDate, "MMMM yyyy");
 
-    const mailOptions = {
+    const mailOptions: any = {
       from: process.env.YOUR_EMAIL_ADDRESS,
       to: process.env.BOSS_EMAIL,
       subject: `Maandelijks Urenrapport - ${monthYear}`,
       text: reportText,
       html: reportHtml,
     };
+
+    // Add CC if there are registered emails
+    if (ccEmails.length > 0) {
+      mailOptions.cc = ccEmails.join(", ");
+      console.log(`📧 Sending CC to: ${ccEmails.join(", ")}`);
+    }
 
     const info = await transporter.sendMail(mailOptions);
     console.log(`✓ Monthly report email sent: ${info.messageId}`);

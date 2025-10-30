@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  discord-bot:
+    build: .
+    container_name: our-hours-ouwe-bot
+    restart: unless-stopped
+    environment:
+      # Discord Configuration
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CLIENT_ID=${CLIENT_ID}
+      - GUILD_ID=${GUILD_ID}
+      - LOG_CHANNEL_ID=${LOG_CHANNEL_ID}
+
+      # Debug Configuration
+      - DEBUG_KEY=${DEBUG_KEY}
+
+      # Firebase Configuration
+      - GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
+
+      # Email Configuration
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - YOUR_EMAIL_ADDRESS=${YOUR_EMAIL_ADDRESS}
+      - BOSS_EMAIL=${BOSS_EMAIL}
+
+    volumes:
+      # Mount service account file
+      - ./service-account.json:/app/service-account.json:ro
+
+    # Optional: Mount logs directory for persistence
+    # - ./logs:/app/logs
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Bot health check')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

@@ -14,6 +14,7 @@ import * as registerCommand from "./commands/register";
 import * as logCommand from "./commands/log";
 import * as editCommand from "./commands/edit";
 import * as deleteCommand from "./commands/delete";
+import * as emailCommand from "./commands/email";
 import * as debugCommand from "./commands/debug";
 import * as myHoursCommand from "./commands/myhours";
 
@@ -45,6 +46,7 @@ client.commands.set(registerCommand.data.name, registerCommand);
 client.commands.set(logCommand.data.name, logCommand);
 client.commands.set(editCommand.data.name, editCommand);
 client.commands.set(deleteCommand.data.name, deleteCommand);
+client.commands.set(emailCommand.data.name, emailCommand);
 client.commands.set(debugCommand.data.name, debugCommand);
 client.commands.set(myHoursCommand.data.name, myHoursCommand);
 

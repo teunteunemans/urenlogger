@@ -2,6 +2,7 @@ export interface User {
   discordUserId: string;
   registeredName: string; // The name they want to use for reports
   registeredAt: string; // ISO String
+  email?: string; // Optional email to receive CC of monthly reports
 }
 
 export interface HourLog {

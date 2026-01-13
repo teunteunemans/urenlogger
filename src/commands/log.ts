@@ -1,38 +1,45 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
-import { logHours, getUser } from "../utils/firebaseService";
-import { parseDateString, formatDateToYYYYMMDD } from "../utils/dateParser";
+import {
+  logHours,
+  getUser,
+  getHoursByUserAndDay,
+} from "../utils/firebaseService";
+import {
+  parseDateStringWithError,
+  formatDateToYYYYMMDD,
+  formatDateWithDayDutch,
+  validateNotFuture,
+} from "../utils/dateParser";
+import { messages, commandDescriptions } from "../i18n/nl";
 
 export const data = new SlashCommandBuilder()
   .setName("log")
-  .setDescription("Log your work hours")
+  .setDescription(commandDescriptions.log.command)
   .addNumberOption((option) =>
     option
-      .setName("hours")
-      .setDescription("Number of hours worked")
+      .setName("uren")
+      .setDescription(commandDescriptions.log.uren)
       .setRequired(true)
       .setMinValue(0.1)
       .setMaxValue(24)
   )
   .addStringOption((option) =>
     option
-      .setName("description")
-      .setDescription("What did you work on?")
+      .setName("omschrijving")
+      .setDescription(commandDescriptions.log.omschrijving)
       .setRequired(false)
   )
   .addStringOption((option) =>
     option
-      .setName("date")
-      .setDescription(
-        'Date (e.g., "yesterday", "22 oct", "2025-10-22", defaults to today)'
-      )
+      .setName("datum")
+      .setDescription(commandDescriptions.log.datum)
       .setRequired(false)
   );
 
 export async function execute(
   interaction: ChatInputCommandInteraction<CacheType>
 ): Promise<void> {
-  // Defer reply to give us time to process
   await interaction.deferReply({ ephemeral: true });
 
   try {
@@ -41,46 +48,67 @@ export async function execute(
 
     if (!user) {
       await interaction.editReply({
-        content: `❌ You need to register first!\n\nPlease use \`/register name: Your Full Name\` to register before logging hours.`,
+        content: messages.log.notRegistered,
       });
       return;
     }
 
-    const hours = interaction.options.getNumber("hours", true);
-    const description = interaction.options.getString("description");
-    const dateInput = interaction.options.getString("date");
-
-    console.log(`   📊 Hours: ${hours}`);
-    console.log(`   📝 Description: ${description || "(none)"}`);
-    console.log(`   📅 Date input: ${dateInput || "(today)"}`);
+    const hours = interaction.options.getNumber("uren", true);
+    const description = interaction.options.getString("omschrijving");
+    const dateInput = interaction.options.getString("datum");
 
     // Parse the date
-    console.log("🔄 Parsing date...");
-    const date = parseDateString(dateInput || undefined);
-    const dateString = formatDateToYYYYMMDD(date);
-    console.log(`✅ Parsed date: ${dateString}`);
+    const parseResult = parseDateStringWithError(dateInput || undefined);
+    if (!parseResult.success || !parseResult.date) {
+      await interaction.editReply({
+        content: parseResult.error || messages.log.error,
+      });
+      return;
+    }
+
+    // Validate not a future date
+    const futureValidation = validateNotFuture(parseResult.date);
+    if (!futureValidation.valid) {
+      await interaction.editReply({
+        content: messages.log.futureDateError,
+      });
+      return;
+    }
+
+    const dateString = formatDateToYYYYMMDD(parseResult.date);
+    const dateDisplay = formatDateWithDayDutch(parseResult.date);
+
+    // Check for duplicate log on same day
+    const existingLogs = await getHoursByUserAndDay(
+      interaction.user.id,
+      dateString
+    );
+
+    if (existingLogs.length > 0) {
+      const existingHours = existingLogs.reduce((sum, log) => sum + log.hours, 0);
+      await interaction.editReply({
+        content: messages.log.duplicateWarning(existingHours, dateDisplay),
+      });
+      return;
+    }
 
     // Log to Firestore with registered name
     await logHours({
       discordUserId: interaction.user.id,
-      discordUsername: user.registeredName, // Use registered name instead of Discord username
+      discordUsername: user.registeredName,
       hours,
       date: dateString,
       description: description || undefined,
       logTimestamp: new Date().toISOString(),
     });
 
-    let response = `✅ Successfully logged **${hours} hours** on **${dateString}**!`;
-    if (description) {
-      response += `\n📝 ${description}`;
-    }
-
-    await interaction.editReply({ content: response });
+    await interaction.editReply({
+      content: messages.log.success(hours, dateDisplay, description || undefined),
+    });
   } catch (error) {
     console.error("Error in /log command:", error);
     await interaction.editReply({
-      content:
-        "❌ An error occurred while logging your hours. Please try again.",
+      content: messages.log.error,
     });
   }
 }

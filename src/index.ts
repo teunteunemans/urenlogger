@@ -10,19 +10,23 @@ import {
 import cron from "node-cron";
 import { sendMonthlyReport } from "./utils/email";
 import { formatDateToYYYYMMDD } from "./utils/dateParser";
-import * as registerCommand from "./commands/register";
-import * as logCommand from "./commands/log";
-import * as editCommand from "./commands/edit";
-import * as deleteCommand from "./commands/delete";
-import * as emailCommand from "./commands/email";
-import * as debugCommand from "./commands/debug";
-import * as myHoursCommand from "./commands/myhours";
+import { validateEnvironment } from "./utils/envValidator";
+import { BILLING_PERIOD } from "./config/constants";
+import { messages } from "./i18n/nl";
 
-// Suppress deprecation warnings
-process.removeAllListeners("warning");
+// Import commands
+import * as registreerCommand from "./commands/registreer";
+import * as logCommand from "./commands/log";
+import * as wijzigCommand from "./commands/wijzig";
+import * as verwijderCommand from "./commands/verwijder";
+import * as emailCommand from "./commands/email";
+import * as urenCommand from "./commands/uren";
 
 // Load environment variables
 dotenv.config();
+
+// Validate environment variables at startup
+validateEnvironment();
 
 // Extend Client type to include commands collection
 interface ExtendedClient extends Client {
@@ -37,63 +41,44 @@ interface ExtendedClient extends Client {
 
 // Create Discord client
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  intents: [GatewayIntentBits.Guilds],
 }) as ExtendedClient;
 
 // Initialize commands collection
 client.commands = new Collection();
-client.commands.set(registerCommand.data.name, registerCommand);
+client.commands.set(registreerCommand.data.name, registreerCommand);
 client.commands.set(logCommand.data.name, logCommand);
-client.commands.set(editCommand.data.name, editCommand);
-client.commands.set(deleteCommand.data.name, deleteCommand);
+client.commands.set(wijzigCommand.data.name, wijzigCommand);
+client.commands.set(verwijderCommand.data.name, verwijderCommand);
 client.commands.set(emailCommand.data.name, emailCommand);
-client.commands.set(debugCommand.data.name, debugCommand);
-client.commands.set(myHoursCommand.data.name, myHoursCommand);
+client.commands.set(urenCommand.data.name, urenCommand);
 
-// Ready event (using clientReady to avoid deprecation warning)
+// Ready event
 client.once(Events.ClientReady, () => {
-  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🤖 DISCORD BOT READY");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`👤 Logged in as: ${client.user?.tag}`);
-  console.log(`🏰 Serving ${client.guilds.cache.size} guild(s)`);
-  console.log(`✅ Bot is online and listening for commands`);
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(`Bot ready: ${client.user?.tag}`);
+  console.log(`Serving ${client.guilds.cache.size} guild(s)`);
 });
 
 // Interaction handler
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("⚡ COMMAND RECEIVED");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`📝 Command: /${interaction.commandName}`);
-  console.log(`👤 User: ${interaction.user.tag} (${interaction.user.id})`);
-  console.log(`🏰 Guild: ${interaction.guild?.name || "DM"}`);
+  console.log(`Command: /${interaction.commandName} by ${interaction.user.tag}`);
 
   const command = client.commands.get(interaction.commandName);
 
   if (!command) {
-    console.error(`❌ No command matching /${interaction.commandName} found`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    console.error(`Unknown command: /${interaction.commandName}`);
     return;
   }
 
   try {
-    console.log(`🔄 Executing command...`);
     await command.execute(interaction);
-    console.log(`✅ Command executed successfully`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   } catch (error) {
-    console.error("\n❌ COMMAND EXECUTION FAILED");
-    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.error(`Command: /${interaction.commandName}`);
-    console.error("Error:", error);
-    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    console.error(`Error in /${interaction.commandName}:`, error);
 
     const errorMessage = {
-      content: "❌ There was an error while executing this command!",
+      content: messages.errors.generic,
       ephemeral: true,
     };
 
@@ -107,7 +92,7 @@ client.on("interactionCreate", async (interaction) => {
 
 /**
  * Generate and send monthly report
- * Billing period: 21st of previous month to 21st of current month
+ * Billing period: 22nd of previous month to 21st of current month
  */
 async function generateMonthlyReport(): Promise<void> {
   const channelId = process.env.LOG_CHANNEL_ID;
@@ -115,40 +100,37 @@ async function generateMonthlyReport(): Promise<void> {
   try {
     const today = new Date();
 
-    // Billing period: 21st of last month to today (or 21st if today is the 21st)
+    // Billing period: 22nd of last month to 21st of this month
     const endDate = new Date(today);
+    endDate.setDate(BILLING_PERIOD.END_DAY);
+
     const startDate = new Date(today);
     startDate.setMonth(startDate.getMonth() - 1);
-    startDate.setDate(21);
+    startDate.setDate(BILLING_PERIOD.START_DAY);
 
     const startDateString = formatDateToYYYYMMDD(startDate);
     const endDateString = formatDateToYYYYMMDD(endDate);
 
-    console.log(
-      `Generating monthly report for ${startDateString} to ${endDateString}`
-    );
+    console.log(`Generating monthly report: ${startDateString} to ${endDateString}`);
 
-    // Send the report via email
     await sendMonthlyReport(startDateString, endDateString, startDate, endDate);
 
-    console.log("✓ Monthly report generated and sent successfully");
+    console.log("Monthly report sent successfully");
 
     // Post success message to Discord
     if (channelId) {
       try {
         const channel = await client.channels.fetch(channelId);
         if (channel && channel.isTextBased()) {
-          const message = `✅ Maandrapport voor **${startDateString}** t/m **${endDateString}** succesvol verstuurd naar ${process.env.BOSS_EMAIL}`;
+          const message = `Maandrapport voor **${startDateString}** t/m **${endDateString}** succesvol verstuurd naar ${process.env.BOSS_EMAIL}`;
           await (channel as TextChannel).send(message);
         }
       } catch (discordError) {
-        console.warn(
-          "⚠️  Could not post success message to Discord (missing permissions)"
-        );
+        console.warn("Could not post to Discord channel");
       }
     }
   } catch (error) {
-    console.error("✗ Error generating monthly report:", error);
+    console.error("Error generating monthly report:", error);
 
     // Post failure message to Discord
     if (channelId) {
@@ -156,28 +138,24 @@ async function generateMonthlyReport(): Promise<void> {
         const channel = await client.channels.fetch(channelId);
         if (channel && channel.isTextBased()) {
           const errorMsg =
-            error instanceof Error ? error.message : "Unknown error";
-          const message = `❌ Fout bij het genereren van het maandrapport: ${errorMsg}`;
+            error instanceof Error ? error.message : "Onbekende fout";
+          const message = `Fout bij het genereren van het maandrapport: ${errorMsg}`;
           await (channel as TextChannel).send(message);
         }
       } catch (discordError) {
-        console.warn(
-          "⚠️  Could not post error message to Discord (missing permissions)"
-        );
+        console.warn("Could not post error to Discord channel");
       }
     }
   }
 }
 
-// Schedule cron jobs
-console.log("Setting up scheduled tasks...");
-
-// Monthly report: At 00:00 on the 21st day of every month
-cron.schedule("0 0 21 * *", () => {
+// Schedule monthly report: At 00:00 on the 21st day of every month
+const cronSchedule = process.env.CRON_SCHEDULE || `0 0 ${BILLING_PERIOD.END_DAY} * *`;
+cron.schedule(cronSchedule, () => {
   console.log("Running scheduled task: Monthly report");
   generateMonthlyReport();
 });
-console.log("✓ Scheduled: Monthly report (00:00 on 21st of each month)");
+console.log(`Scheduled: Monthly report (${cronSchedule})`);
 
 // Login to Discord
 client.login(process.env.DISCORD_TOKEN);

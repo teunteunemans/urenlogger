@@ -1,46 +1,51 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
-import { registerUser, getUser } from "../utils/firebaseService";
+import {
+  registerUser,
+  getUser,
+  updateUserName,
+} from "../utils/firebaseService";
+import { messages, commandDescriptions } from "../i18n/nl";
 
 export const data = new SlashCommandBuilder()
-  .setName("register")
-  .setDescription("Register your name for work hour logging")
+  .setName("registreer")
+  .setDescription(commandDescriptions.registreer.command)
   .addStringOption((option) =>
     option
-      .setName("name")
-      .setDescription("Your full name (as it should appear in reports)")
+      .setName("naam")
+      .setDescription(commandDescriptions.registreer.naam)
       .setRequired(true)
   );
 
 export async function execute(
   interaction: ChatInputCommandInteraction<CacheType>
 ): Promise<void> {
+  const name = interaction.options.getString("naam", true);
+
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    const name = interaction.options.getString("name", true);
-
     // Check if user is already registered
     const existingUser = await getUser(interaction.user.id);
 
     if (existingUser) {
+      // Update existing user's name
+      await updateUserName(interaction.user.id, name);
       await interaction.editReply({
-        content: `⚠️ You are already registered as **${existingUser.registeredName}**.\n\nIf you want to change your name, please contact an administrator.`,
+        content: messages.registreer.updated(existingUser.registeredName, name),
       });
       return;
     }
 
-    // Register the user
+    // Register new user
     await registerUser(interaction.user.id, name);
-
     await interaction.editReply({
-      content: `✅ Successfully registered as **${name}**!\n\nYou can now use \`/log\` to log your work hours.`,
+      content: messages.registreer.success(name),
     });
   } catch (error) {
-    console.error("Error in /register command:", error);
+    console.error("Error registering user:", error);
     await interaction.editReply({
-      content:
-        "❌ An error occurred while registering. Please try again later.",
+      content: messages.registreer.error,
     });
   }
 }

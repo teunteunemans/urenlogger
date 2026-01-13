@@ -5,26 +5,32 @@ import {
   updateUserEmail,
   removeUserEmail,
 } from "../utils/firebaseService";
+import { User } from "../types";
+import { messages, commandDescriptions } from "../i18n/nl";
+
+// Better email validation regex
+// Checks for: local part @ domain . tld (with tld at least 2 chars)
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
 
 export const data = new SlashCommandBuilder()
   .setName("email")
-  .setDescription("Manage your email for receiving monthly report copies")
+  .setDescription(commandDescriptions.email.command)
   .addSubcommand((subcommand) =>
     subcommand
       .setName("set")
-      .setDescription("Set or update your email address")
+      .setDescription(commandDescriptions.email.set)
       .addStringOption((option) =>
         option
           .setName("address")
-          .setDescription("Your email address")
+          .setDescription(commandDescriptions.email.address)
           .setRequired(true)
       )
   )
   .addSubcommand((subcommand) =>
-    subcommand.setName("remove").setDescription("Remove your email address")
+    subcommand.setName("remove").setDescription(commandDescriptions.email.remove)
   )
   .addSubcommand((subcommand) =>
-    subcommand.setName("show").setDescription("Show your current email address")
+    subcommand.setName("show").setDescription(commandDescriptions.email.show)
   );
 
 export async function execute(
@@ -37,8 +43,7 @@ export async function execute(
     const user = await getUser(interaction.user.id);
     if (!user) {
       await interaction.editReply({
-        content:
-          "❌ You must register first using `/register` before you can manage your email.",
+        content: messages.email.notRegistered,
       });
       return;
     }
@@ -56,93 +61,69 @@ export async function execute(
         await handleShowEmail(interaction, user);
         break;
       default:
-        await interaction.editReply({ content: "❌ Unknown subcommand" });
+        await interaction.editReply({ content: messages.errors.unknownCommand });
     }
   } catch (error) {
     console.error("Error in /email command:", error);
     await interaction.editReply({
-      content: "❌ An error occurred while managing your email.",
+      content: messages.email.error,
     });
   }
 }
 
 async function handleSetEmail(
   interaction: ChatInputCommandInteraction<CacheType>,
-  user: any
+  user: User
 ): Promise<void> {
-  const email = interaction.options.getString("address", true);
+  const email = interaction.options.getString("address", true).trim();
 
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  // Improved email validation
+  if (!EMAIL_REGEX.test(email)) {
     await interaction.editReply({
-      content: "❌ Invalid email address format. Please enter a valid email.",
+      content: messages.email.invalidFormat,
     });
     return;
   }
 
-  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("⚡ COMMAND RECEIVED");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`📝 Command: /email set`);
-  console.log(`👤 User: ${interaction.user.tag} (${interaction.user.id})`);
-  console.log(`📧 Email: ${email}`);
-
   await updateUserEmail(interaction.user.id, email);
 
-  const wasUpdate = user.email ? true : false;
+  const wasUpdate = !!user.email;
   await interaction.editReply({
-    content: `✅ **Email ${
-      wasUpdate ? "updated" : "registered"
-    }!**\n\nYou will receive a CC of monthly reports at: **${email}**\n\nYou can update this anytime with \`/email set\` or remove it with \`/email remove\`.`,
+    content: messages.email.setSuccess(email, wasUpdate),
   });
-
-  console.log("✅ Command executed successfully");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 }
 
 async function handleRemoveEmail(
   interaction: ChatInputCommandInteraction<CacheType>,
-  user: any
+  user: User
 ): Promise<void> {
   if (!user.email) {
     await interaction.editReply({
-      content:
-        "❌ You don't have an email address registered.\n\nUse `/email set` to add one.",
+      content: messages.email.showNone,
     });
     return;
   }
-
-  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("⚡ COMMAND RECEIVED");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`📝 Command: /email remove`);
-  console.log(`👤 User: ${interaction.user.tag} (${interaction.user.id})`);
 
   const oldEmail = user.email;
   await removeUserEmail(interaction.user.id);
 
   await interaction.editReply({
-    content: `✅ **Email removed!**\n\nYou will no longer receive copies of monthly reports at **${oldEmail}**.`,
+    content: messages.email.removeSuccess(oldEmail),
   });
-
-  console.log("✅ Command executed successfully");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 }
 
 async function handleShowEmail(
   interaction: ChatInputCommandInteraction<CacheType>,
-  user: any
+  user: User
 ): Promise<void> {
   if (!user.email) {
     await interaction.editReply({
-      content:
-        "📧 **No email registered**\n\nYou are not currently receiving copies of monthly reports.\n\nUse `/email set` to add your email address.",
+      content: messages.email.showNone,
     });
     return;
   }
 
   await interaction.editReply({
-    content: `📧 **Your registered email:**\n**${user.email}**\n\nYou will receive a CC of monthly reports at this address.\n\nUse \`/email set\` to update or \`/email remove\` to remove it.`,
+    content: messages.email.showCurrent(user.email),
   });
 }

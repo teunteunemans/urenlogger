@@ -1,33 +1,29 @@
 import dotenv from "dotenv";
 import { REST, Routes } from "discord.js";
-import * as registerCommand from "./commands/register";
+import * as registreerCommand from "./commands/registreer";
 import * as logCommand from "./commands/log";
-import * as editCommand from "./commands/edit";
-import * as deleteCommand from "./commands/delete";
+import * as wijzigCommand from "./commands/wijzig";
+import * as verwijderCommand from "./commands/verwijder";
 import * as emailCommand from "./commands/email";
-import * as debugCommand from "./commands/debug";
-import * as myHoursCommand from "./commands/myhours";
+import * as urenCommand from "./commands/uren";
 
 // Load environment variables
 dotenv.config();
 
 const commands = [
-  registerCommand.data.toJSON(),
+  registreerCommand.data.toJSON(),
   logCommand.data.toJSON(),
-  editCommand.data.toJSON(),
-  deleteCommand.data.toJSON(),
+  wijzigCommand.data.toJSON(),
+  verwijderCommand.data.toJSON(),
   emailCommand.data.toJSON(),
-  debugCommand.data.toJSON(),
-  myHoursCommand.data.toJSON(),
+  urenCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
 
 (async () => {
   try {
-    console.log(
-      `\nStarted refreshing ${commands.length} application (/) command(s).`
-    );
+    console.log(`Deploying ${commands.length} commands...`);
 
     const data = (await rest.put(
       Routes.applicationGuildCommands(
@@ -37,10 +33,14 @@ const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
       { body: commands }
     )) as any[];
 
-    console.log(
-      `✓ Successfully reloaded ${data.length} application (/) command(s).\n`
-    );
+    console.log(`Successfully deployed ${data.length} commands.`);
+
+    // List deployed commands
+    data.forEach((cmd: any) => {
+      console.log(`  - /${cmd.name}`);
+    });
   } catch (error) {
-    console.error("✗ Error deploying commands:", error);
+    console.error("Error deploying commands:", error);
+    process.exit(1);
   }
 })();

@@ -12,7 +12,7 @@ None
 
 - [x] **Phase 1: Project Setup** - Next.js scaffold, Discord interactions endpoint with ed25519 verification
 - [x] **Phase 2: Command Migration** - Port all 6 commands, Firebase service, date parser, i18n, and email
-- [ ] **Phase 3: Cron & Deployment** - Vercel Cron Job for monthly report, deployment config, command registration
+- [x] **Phase 3: Cron & Deployment** - Vercel Cron Job for monthly report, deployment config, command registration
 
 ## Phase Details
 
@@ -44,7 +44,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: Vercel Cron Job, command registration, deployment config
+- [x] 03-01: Vercel Cron Job, command registration, deployment config
 
 ## Progress
 
@@ -52,4 +52,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Project Setup | 1/1 | Complete | 2026-02-03 |
 | 2. Command Migration | 2/2 | Complete | 2026-02-03 |
-| 3. Cron & Deployment | 0/? | Not started | - |
+| 3. Cron & Deployment | 1/1 | Complete | 2026-02-03 |

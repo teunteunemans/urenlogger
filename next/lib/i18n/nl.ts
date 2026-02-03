@@ -94,13 +94,13 @@ export const messages = {
       "Je moet je eerst registreren met `/registreer` voordat je je e-mail kunt beheren.",
     invalidFormat: "Ongeldig e-mailadres. Voer een geldig e-mailadres in.",
     setSuccess: (email: string, isUpdate: boolean) =>
-      `**E-mail ${isUpdate ? "bijgewerkt" : "ingesteld"}!**\n\nJe ontvangt een kopie van maandelijkse rapporten op: **${email}**\n\nJe kunt dit aanpassen met \`/email set\` of verwijderen met \`/email remove\`.`,
+      `**E-mail ${isUpdate ? "bijgewerkt" : "ingesteld"}!**\n\nJe ontvangt een kopie van maandelijkse rapporten op: **${email}**\n\nJe kunt dit aanpassen met \`/email instellen\` of verwijderen met \`/email verwijderen\`.`,
     removeSuccess: (email: string) =>
       `**E-mail verwijderd!**\n\nJe ontvangt geen kopie meer van maandelijkse rapporten op **${email}**.`,
     showCurrent: (email: string) =>
-      `**Je geregistreerde e-mail:**\n**${email}**\n\nJe ontvangt een kopie van maandelijkse rapporten op dit adres.\n\nGebruik \`/email set\` om te wijzigen of \`/email remove\` om te verwijderen.`,
+      `**Je geregistreerde e-mail:**\n**${email}**\n\nJe ontvangt een kopie van maandelijkse rapporten op dit adres.\n\nGebruik \`/email instellen\` om te wijzigen of \`/email verwijderen\` om te verwijderen.`,
     showNone:
-      "**Geen e-mail geregistreerd**\n\nJe ontvangt momenteel geen kopie van maandelijkse rapporten.\n\nGebruik `/email set` om je e-mailadres toe te voegen.",
+      "**Geen e-mail geregistreerd**\n\nJe ontvangt momenteel geen kopie van maandelijkse rapporten.\n\nGebruik `/email instellen` om je e-mailadres toe te voegen.",
     error: "Er is een fout opgetreden bij het beheren van je e-mail.",
   },
 

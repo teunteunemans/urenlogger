@@ -246,8 +246,8 @@ async function handleEmail(
     const subcommand = getSubcommand(interaction);
 
     switch (subcommand) {
-      case "set": {
-        const email = getSubcommandOption(interaction, "address");
+      case "instellen": {
+        const email = getSubcommandOption(interaction, "adres");
         if (!email) {
           return messages.email.error;
         }
@@ -262,7 +262,7 @@ async function handleEmail(
         return messages.email.setSuccess(trimmedEmail, wasUpdate);
       }
 
-      case "remove": {
+      case "verwijderen": {
         if (!user.email) {
           return messages.email.showNone;
         }
@@ -271,7 +271,7 @@ async function handleEmail(
         return messages.email.removeSuccess(oldEmail);
       }
 
-      case "show": {
+      case "tonen": {
         if (!user.email) {
           return messages.email.showNone;
         }

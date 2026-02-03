@@ -33,7 +33,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01: Foundation & command dispatch router
+- [ ] 02-02: Port all 6 commands & email utility
 
 ### Phase 3: Cron & Deployment
 **Goal**: Monthly report via Vercel Cron Job, deployment to Vercel, Discord command registration
@@ -43,7 +44,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01: Vercel Cron Job, command registration, deployment config
 
 ## Progress
 

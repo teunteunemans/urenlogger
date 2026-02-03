@@ -1,9 +1,9 @@
 import {
   InteractionType,
   InteractionResponseType,
-  MessageFlags,
 } from "discord-api-types/v10";
 import { verifyDiscordRequest } from "@/lib/discord/verify";
+import { handleCommand } from "@/lib/discord/commands";
 
 export const runtime = "nodejs";
 
@@ -31,13 +31,7 @@ export async function POST(req: Request) {
 
   // Handle slash commands
   if (interaction.type === InteractionType.ApplicationCommand) {
-    return Response.json({
-      type: InteractionResponseType.ChannelMessageWithSource,
-      data: {
-        content: "Command received",
-        flags: MessageFlags.Ephemeral,
-      },
-    });
+    return handleCommand(interaction);
   }
 
   return new Response("Unknown interaction type", { status: 400 });

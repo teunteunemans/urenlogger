@@ -6,6 +6,7 @@ import {
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
+import { after } from "next/server";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
@@ -600,9 +601,9 @@ export async function handleCommand(
   // All our commands are chat input (slash) commands — cast is safe
   const chatInteraction = interaction as APIChatInputApplicationCommandInteraction;
 
-  // Fire-and-forget: execute the handler asynchronously and send follow-up
-  // Do NOT await -- we need to return the deferred response within 3 seconds
-  void (async () => {
+  // Use after() to keep the serverless function alive after response is sent.
+  // The deferred response is returned immediately, then the handler runs in the background.
+  after(async () => {
     try {
       const message = await handler(chatInteraction);
       await sendFollowUp(interaction, message);
@@ -610,7 +611,7 @@ export async function handleCommand(
       console.error(`Error executing command "${commandName}":`, error);
       await sendFollowUp(interaction, messages.errors.generic);
     }
-  })();
+  });
 
   // Return deferred response immediately
   return Response.json({

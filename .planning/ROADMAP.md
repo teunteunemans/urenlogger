@@ -10,7 +10,7 @@ None
 
 ## Phases
 
-- [ ] **Phase 1: Project Setup** - Next.js scaffold, Discord interactions endpoint with ed25519 verification
+- [x] **Phase 1: Project Setup** - Next.js scaffold, Discord interactions endpoint with ed25519 verification
 - [ ] **Phase 2: Command Migration** - Port all 6 commands, Firebase service, date parser, i18n, and email
 - [ ] **Phase 3: Cron & Deployment** - Vercel Cron Job for monthly report, deployment config, command registration
 
@@ -24,7 +24,7 @@ None
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: TBD (run /gsd:plan-phase 1 to break down)
+- [x] 01-01: Next.js scaffold + Discord interactions endpoint
 
 ### Phase 2: Command Migration
 **Goal**: All 6 slash commands working via the interactions endpoint with Firebase and Dutch date parsing
@@ -49,6 +49,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Project Setup | 0/? | Not started | - |
+| 1. Project Setup | 1/1 | Complete | 2026-02-03 |
 | 2. Command Migration | 0/? | Not started | - |
 | 3. Cron & Deployment | 0/? | Not started | - |
